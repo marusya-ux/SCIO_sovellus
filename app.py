@@ -14,14 +14,26 @@ def get_connection():
     return connection
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
 
     connection = get_connection()
 
-    posts = connection.execute(
-        "SELECT * FROM posts"
-    ).fetchall()
+    search = request.args.get("search")
+
+    if search:
+        posts = connection.execute(
+            """
+            SELECT * FROM posts
+            WHERE title LIKE ? OR content LIKE ?
+            """,
+            (f"%{search}%", f"%{search}%")
+        ).fetchall()
+
+    else:
+        posts = connection.execute(
+            "SELECT * FROM posts"
+        ).fetchall()
 
     connection.close()
 
