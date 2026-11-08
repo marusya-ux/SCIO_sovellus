@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2>SCIO Scientific Community</h2>
+
+<p>Welcome to SCIO!</p>
+
+{% if posts %}
+
+<h3>Latest publications</h3>
+
+{% for post in posts %}
+<div>
+    <h4>{{ post.title }}</h4>
+    <p>{{ post.content }}</p>
+
+    <a href="/edit/{{ post.id }}">Edit</a>
+    <a href="/delete/{{ post.id }}">Delete</a>
+</div>
+<hr>
+
+{% endfor %}
+
+{% else %}
+
+<p>No publications yet.</p>
+
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2>Edit publication</h2>
+
+<form method="post">
+
+    Title:
+    <br>
+    <input type="text" name="title" value="{{ post.title }}">
+
+    <br><br>
+
+    Content:
+    <br>
+    <textarea name="content">{{ post.content }}</textarea>
+
+    <br><br>
+
+    <button type="submit">
+        Save changes
+    </button>
+
+</form>
+
+{% endblock %}
+

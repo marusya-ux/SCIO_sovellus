@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+database.db
+.DS_Store
+__pycache__/
+venv/

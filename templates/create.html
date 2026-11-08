@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2>Create new scientific post</h2>
+
+<form method="post">
+
+    Title:
+    <br>
+    <input type="text" name="title">
+
+    <br><br>
+
+    Content:
+    <br>
+    <textarea name="content"></textarea>
+
+    <br><br>
+
+    <button type="submit">
+        Publish
+    </button>
+
+</form>
+
+{% endblock %}
