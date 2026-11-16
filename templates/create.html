@@ -18,6 +18,49 @@
 
     <br><br>
 
+
+    <h3>Scientific field</h3>
+
+    {% for category in categories %}
+
+        {% if category.type == "Field" %}
+
+            <input 
+                type="checkbox" 
+                name="categories" 
+                value="{{ category.id }}">
+
+            {{ category.name }}
+
+            <br>
+
+        {% endif %}
+
+    {% endfor %}
+
+
+    <h3>Publication type</h3>
+
+    {% for category in categories %}
+
+        {% if category.type == "Type" %}
+
+            <input 
+                type="checkbox" 
+                name="categories" 
+                value="{{ category.id }}">
+
+            {{ category.name }}
+
+            <br>
+
+        {% endif %}
+
+    {% endfor %}
+
+
+    <br>
+
     <button type="submit">
         Publish
     </button>

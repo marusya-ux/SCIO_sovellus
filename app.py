@@ -3,7 +3,11 @@ import sqlite3
 
 app = Flask(__name__)
 
-app.secret_key = "scio_secret_key"
+
+import os
+
+app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key")
+
 
 DATABASE = "database.db"
 
@@ -35,9 +39,48 @@ def index():
             "SELECT * FROM posts"
         ).fetchall()
 
+    posts_with_comments = []
+
+    for post in posts:
+
+        comments = connection.execute(
+            """
+            SELECT comments.content, users.username
+            FROM comments
+            JOIN users ON comments.user_id = users.id
+            WHERE post_id=?
+            """,
+            (post["id"],)
+        ).fetchall()
+
+        categories = connection.execute(
+            """
+            SELECT categories.name
+            FROM categories
+            JOIN post_categories
+            ON categories.id = post_categories.category_id
+            WHERE post_categories.post_id=?
+            """,
+            (post["id"],)
+        ).fetchall()
+
+
+        posts_with_comments.append(
+            {
+                "post": post,
+                "comments": comments,
+                "categories": categories
+            }
+        )
+
+
+
     connection.close()
 
-    return render_template("index.html", posts=posts)
+    return render_template(
+        "index.html",
+        posts=posts_with_comments
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -97,30 +140,73 @@ def logout():
     session.clear()
 
     return redirect("/")
+
+
 @app.route("/create", methods=["GET", "POST"])
 def create():
 
     if "user_id" not in session:
         return redirect("/login")
 
+    connection = get_connection()
+
+    categories = connection.execute(
+        "SELECT * FROM categories"
+    ).fetchall()
+
+
     if request.method == "POST":
 
-        title = request.form["title"]
-        content = request.form["content"]
+        title = request.form["title"].strip()
+        content = request.form["content"].strip()
 
-        connection = get_connection()
+        if len(title) < 3:
+            connection.close()
+            return "Title must be at least 3 characters"
 
-        connection.execute(
-            "INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)",
+        if len(content) < 10:
+            connection.close()
+            return "Content must be at least 10 characters"
+
+
+        cursor = connection.execute(
+            """
+            INSERT INTO posts (title, content, user_id)
+            VALUES (?, ?, ?)
+            """,
             (title, content, session["user_id"])
         )
+
+        post_id = cursor.lastrowid
+
+
+        selected_categories = request.form.getlist("categories")
+
+
+        for category_id in selected_categories:
+
+            connection.execute(
+                """
+                INSERT INTO post_categories (post_id, category_id)
+                VALUES (?, ?)
+                """,
+                (post_id, category_id)
+            )
+
 
         connection.commit()
         connection.close()
 
         return redirect("/")
 
-    return render_template("create.html")
+
+    connection.close()
+
+    return render_template(
+        "create.html",
+        categories=categories
+    )
+
 
 @app.route("/delete/<int:id>")
 def delete(id):
@@ -129,6 +215,19 @@ def delete(id):
         return redirect("/login")
 
     connection = get_connection()
+
+    post = connection.execute(
+        "SELECT * FROM posts WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    if post is None:
+        connection.close()
+        return "Publication not found"
+
+    if post["user_id"] != session["user_id"]:
+        connection.close()
+        return "You cannot delete this publication"
 
     connection.execute(
         "DELETE FROM posts WHERE id=?",
@@ -154,10 +253,26 @@ def edit(id):
         (id,)
     ).fetchone()
 
+    if post is None:
+        connection.close()
+        return "Publication not found"
+
+    if post["user_id"] != session["user_id"]:
+        connection.close()
+        return "You cannot edit this publication"
+
     if request.method == "POST":
 
-        title = request.form["title"]
-        content = request.form["content"]
+        title = request.form["title"].strip()
+        content = request.form["content"].strip()
+
+        if len(title) < 3:
+            connection.close()
+            return "Title must be at least 3 characters"
+
+        if len(content) < 10:
+            connection.close()
+            return "Content must be at least 10 characters"
 
         connection.execute(
             "UPDATE posts SET title=?, content=? WHERE id=?",
@@ -172,6 +287,53 @@ def edit(id):
     connection.close()
 
     return render_template("edit.html", post=post)
+
+@app.route("/user/<int:id>")
+def user(id):
+
+    connection = get_connection()
+
+    user = connection.execute(
+        "SELECT * FROM users WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    posts = connection.execute(
+        "SELECT * FROM posts WHERE user_id=?",
+        (id,)
+    ).fetchall()
+
+    connection.close()
+
+    if user is None:
+        return "User not found"
+
+    return render_template("user.html", user=user, posts=posts)
+
+
+
+@app.route("/comment/<int:post_id>", methods=["POST"])
+def comment(post_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    content = request.form["content"].strip()
+
+    if len(content) < 2:
+        return "Comment is too short"
+
+    connection = get_connection()
+
+    connection.execute(
+        "INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)",
+        (content, session["user_id"], post_id)
+    )
+
+    connection.commit()
+    connection.close()
+
+    return redirect("/")
 
 
 if __name__ == "__main__":

@@ -6,12 +6,11 @@
 
 <p>Welcome to SCIO!</p>
 
-
 <form method="get" action="/">
 
-    <input 
-        type="text" 
-        name="search" 
+    <input
+        type="text"
+        name="search"
         placeholder="Search publications">
 
     <button type="submit">
@@ -22,27 +21,97 @@
 
 <br>
 
-
 {% if posts %}
 
 <h3>Latest publications</h3>
 
-{% for post in posts %}
-<div>
-    <h4>{{ post.title }}</h4>
-    <p>{{ post.content }}</p>
+{% for item in posts %}
 
-    <a href="/edit/{{ post.id }}">Edit</a>
-    <a href="/delete/{{ post.id }}">Delete</a>
+<div>
+
+    <h4>{{ item.post.title }}</h4>
+
+    <p>{{ item.post.content }}</p>
+
+<p>
+    <strong>Categories:</strong>
+
+    {% if item.categories %}
+
+        {% for category in item.categories %}
+
+            {{ category.name }}
+
+            {% if not loop.last %}
+                ,
+            {% endif %}
+
+        {% endfor %}
+
+    {% else %}
+
+        No categories
+
+    {% endif %}
+
+</p>
+
+
+    <a href="/edit/{{ item.post.id }}">Edit</a>
+
+    <a href="/delete/{{ item.post.id }}">Delete</a>
+
+
+    <h5>Comments</h5>
+
+    {% if item.comments %}
+
+        {% for comment in item.comments %}
+
+            <p>
+                <strong>{{ comment.username }}</strong>:
+                {{ comment.content }}
+            </p>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No comments yet.</p>
+
+    {% endif %}
+
+
+    {% if session.user_id %}
+
+    <form method="POST" action="/comment/{{ item.post.id }}">
+
+        <input
+            type="text"
+            name="content"
+            placeholder="Write a comment">
+
+        <button type="submit">
+            Add comment
+        </button>
+
+    </form>
+
+    {% endif %}
+
+
 </div>
+
 <hr>
 
 {% endfor %}
+
 
 {% else %}
 
 <p>No publications yet.</p>
 
 {% endif %}
+
 
 {% endblock %}
